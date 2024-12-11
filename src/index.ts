@@ -13,23 +13,32 @@ import {
   SplitsReceiver,
   WriteOperation,
 } from './types';
+import {ensureWalletHasSufficientBalance} from './ensureWalletHasSufficientBalance';
 
 const MAX_CYCLES = 1000;
 const SCRIPT_ITERATIONS = 3;
 
-async function main(): Promise<void> {
-  const startTime = Date.now();
-  const wallet = await getWalletInstance();
-  const db = new Client({connectionString: appSettings.connectionString});
-  const allWriteOperations: WriteOperation[] = [];
-
+async function main(db: Client): Promise<void> {
   try {
     console.log('Starting script...');
+    const startTime = Date.now();
+
+    const {
+      network: {symbol},
+      shouldTryAutoTopUp,
+    } = appSettings;
+
+    const wallet = await getWalletInstance();
+    const startBalance = await wallet.provider!.getBalance(wallet.address);
+
+    if (shouldTryAutoTopUp) {
+      await ensureWalletHasSufficientBalance(wallet);
+    }
+
+    const allWriteOperations: WriteOperation[] = [];
+
     await db.connect();
     console.log('Connected to database.');
-
-    const startBalance = await wallet.provider!.getBalance(wallet.address);
-    console.log(`Initial wallet balance: ${formatEther(startBalance)} ETH`);
 
     const tokens = await getTokens(db);
     console.log(`Found ${tokens.length} tokens to process`);
@@ -58,6 +67,8 @@ async function main(): Promise<void> {
 
     console.log('\n=== Final Results ===');
     console.log(`Total cost: ${formatEther(costWei)} ETH`);
+    console.log(`Starting balance: ${formatEther(startBalance)} ${symbol}`);
+    console.log(`Current balance: ${formatEther(endBalance)} ${symbol}`);
     console.log(
       `Total execution time: ${executionTimeMinutes.toFixed(2)} minutes`,
     );
@@ -234,7 +245,9 @@ function logWriteOperations(operations: WriteOperation[]): void {
   }
 }
 
-void main().catch(error => {
-  console.error('Unhandled error in main:', error);
-  process.exit(1); // eslint-disable-line n/no-process-exit
-});
+void main(new Client({connectionString: appSettings.connectionString})).catch(
+  error => {
+    console.error('Unhandled error in main:', error);
+    process.exit(1); // eslint-disable-line n/no-process-exit
+  },
+);

@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import dotenvExpand from 'dotenv-expand';
-import {SUPPORTED_CHAINS, SupportedChain} from './types';
+import {ChainId} from './types';
+import getNetwork from './getNetwork';
 
 dotenvExpand.expand(dotenv.config());
 
@@ -11,26 +12,26 @@ const appSettings = {
   walletPrivateKey: validatePrivateKey(
     process.env.WALLET_PRIVATE_KEY ?? missingEnvVar('WALLET_PRIVATE_KEY'),
   ),
-  chain: validateChain(process.env.CHAIN ?? missingEnvVar('CHAIN')),
+
+  network: getNetwork(
+    Number(process.env.CHAIN_ID ?? missingEnvVar('CHAIN_ID')) as ChainId,
+  ),
+
   rpcUrl: process.env.RPC_URL ?? missingEnvVar('RPC_URL'),
   rpcUrlAccessToken: process.env.RPC_URL_ACCESS_TOKEN,
+
   graphQlUrl: process.env.GRAPHQL_URL ?? missingEnvVar('GRAPHQL_URL'),
   graphQlAccessToken:
     process.env.GRAPHQL_ACCESS_TOKEN ?? missingEnvVar('GRAPHQL_ACCESS_TOKEN'),
+
+  shouldTryAutoTopUp: process.env.SHOULD_TRY_AUTO_TOP_UP === 'true',
+  safes: process.env.SAFES ? JSON.parse(process.env.SAFES) : {},
 } as const;
 
 export default appSettings;
 
 function missingEnvVar(name: string): never {
   throw new Error(`Missing ${name} in .env file.`);
-}
-
-function validateChain(chain: string): SupportedChain {
-  if (!SUPPORTED_CHAINS.includes(chain as SupportedChain)) {
-    throw new Error(`Unsupported chain: ${chain}`);
-  }
-
-  return chain as SupportedChain;
 }
 
 function validatePrivateKey(key: string): string {

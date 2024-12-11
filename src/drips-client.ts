@@ -9,13 +9,12 @@ import {Contract, TransactionResponse} from 'ethers';
 import appSettings from './appSettings';
 import getWalletInstance from './getWalletInstance';
 
-const {chain} = appSettings;
-
-const contractAddresses = {
-  mainnet: '0xd0Dd053392db676D57317CD4fe96Fc2cCf42D0b4',
-  filecoin: '0xd320F59F109c618b19707ea5C5F068020eA333B3',
-  sepolia: '0x74A32a38D945b9527524900429b083547DeB9bF4',
-} as const;
+const {
+  network: {
+    contracts: {drips: contractAddress},
+    name: networkName,
+  },
+} = appSettings;
 
 let contractInstance: Contract | null = null;
 
@@ -25,10 +24,9 @@ async function getDripsContract(): Promise<Contract> {
   }
 
   const wallet = await getWalletInstance();
-  const contractAddress = contractAddresses[chain];
 
   if (!contractAddress) {
-    throw new Error(`No contract address configured for chain: ${chain}`);
+    throw new Error(`No contract address configured for chain: ${networkName}`);
   }
 
   try {

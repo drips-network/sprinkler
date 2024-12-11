@@ -14,7 +14,6 @@ import {
   WriteOperation,
 } from './types';
 
-// Constants
 const MAX_CYCLES = 1000;
 const SCRIPT_ITERATIONS = 3;
 

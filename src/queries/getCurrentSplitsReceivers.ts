@@ -17,7 +17,6 @@ export default async function getCurrentSplitsReceivers(
   accountId: string,
   type: 'dripList' | 'project',
 ): Promise<SplitsReceiver[]> {
-  // Use a column mapping to determine which column to query based on type
   const idColumn = type === 'dripList' ? 'funderDripListId' : 'funderProjectId';
 
   const {rows: addressSplits} = await db.query<SplitRow>({

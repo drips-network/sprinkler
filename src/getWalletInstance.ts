@@ -17,17 +17,21 @@ export default async function getWalletInstance(): Promise<Wallet> {
   }
 
   try {
-    const {rpcUrl, rpcUrlAccessToken} = appSettings;
+    const {
+      rpcUrl,
+      rpcUrlAccessToken,
+      network: {name: currentNetwork},
+    } = appSettings;
     const urlOrFetchRequest = rpcUrlAccessToken
       ? createAuthFetchRequest(rpcUrl, rpcUrlAccessToken)
       : rpcUrl;
 
     const provider = new JsonRpcProvider(urlOrFetchRequest);
 
-    const network = await provider.getNetwork();
-    if (network.name !== appSettings.chain) {
+    const providerNetwork = await provider.getNetwork();
+    if (providerNetwork.name !== currentNetwork) {
       throw new Error(
-        `Provider connected to ${network.name} but expected ${appSettings.chain}`,
+        `Provider connected to ${providerNetwork.name} but expected ${currentNetwork}`,
       );
     }
 

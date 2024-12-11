@@ -3,33 +3,35 @@ import appSettings from '../appSettings';
 import {OxString} from '../types';
 
 export default async function getTokens(db: Client) {
-  const {chain} = appSettings;
+  const {
+    network: {name: dbSchema},
+  } = appSettings;
 
   const distictGivenTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
-      FROM "${chain}"."GivenEvents"
+      FROM "${dbSchema}"."GivenEvents"
     `,
   });
 
   const distictSplitTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
-      FROM "${chain}"."SplitEvents"
+      FROM "${dbSchema}"."SplitEvents"
     `,
   });
 
   const distinctStreamSetTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
-      FROM "${chain}"."StreamsSetEvents"
+      FROM "${dbSchema}"."StreamsSetEvents"
     `,
   });
 
   const distictSqueezedStreamsTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
-      FROM "${chain}"."SqueezedStreamsEvents"
+      FROM "${dbSchema}"."SqueezedStreamsEvents"
     `,
   });
 

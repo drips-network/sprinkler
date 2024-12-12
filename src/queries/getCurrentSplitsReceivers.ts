@@ -3,7 +3,9 @@ import {Client} from 'pg';
 import appSettings from '../appSettings';
 import {SplitsReceiver} from '../types';
 
-const {chain} = appSettings;
+const {
+  network: {name: dbSchema},
+} = appSettings;
 
 type SplitRow = {
   fundeeAccountId?: string;
@@ -20,17 +22,17 @@ export default async function getCurrentSplitsReceivers(
   const idColumn = type === 'dripList' ? 'funderDripListId' : 'funderProjectId';
 
   const {rows: addressSplits} = await db.query<SplitRow>({
-    text: `SELECT * FROM "${chain}"."AddressDriverSplitReceivers" WHERE "${idColumn}" = $1`,
+    text: `SELECT * FROM "${dbSchema}"."AddressDriverSplitReceivers" WHERE "${idColumn}" = $1`,
     values: [accountId],
   });
 
   const {rows: dripListSplits} = await db.query<SplitRow>({
-    text: `SELECT * FROM "${chain}"."DripListSplitReceivers" WHERE "${idColumn}" = $1`,
+    text: `SELECT * FROM "${dbSchema}"."DripListSplitReceivers" WHERE "${idColumn}" = $1`,
     values: [accountId],
   });
 
   const {rows: projectSplits} = await db.query<SplitRow>({
-    text: `SELECT * FROM "${chain}"."RepoDriverSplitReceivers" WHERE "${idColumn}" = $1`,
+    text: `SELECT * FROM "${dbSchema}"."RepoDriverSplitReceivers" WHERE "${idColumn}" = $1`,
     values: [accountId],
   });
 

@@ -25,9 +25,10 @@ export default async function getWalletInstance(): Promise<Wallet> {
     const provider = new JsonRpcProvider(urlOrFetchRequest);
 
     const network = await provider.getNetwork();
-    if (network.name !== appSettings.chain) {
+    // eslint-disable-next-line n/no-unsupported-features/es-builtins
+    if (network.chainId !== BigInt(appSettings.network.chainId)) {
       throw new Error(
-        `Provider connected to ${network.name} but expected ${appSettings.chain}`,
+        `Provider connected to chain ${network.chainId} but expected ${appSettings.network.chainId}`,
       );
     }
 

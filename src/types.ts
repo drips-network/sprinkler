@@ -1,5 +1,14 @@
-export const SUPPORTED_CHAINS = ['mainnet', 'filecoin', 'sepolia'] as const;
-export type SupportedChain = (typeof SUPPORTED_CHAINS)[number];
+export const SUPPORTED_CHAIN_IDS = [1, 11155111, 314] as const;
+export type ChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
+
+export type Network = {
+  chainId: ChainId;
+  name: string;
+  symbol: string;
+  contracts: {
+    drips: string;
+  };
+};
 
 export type OxString = `0x${string}`;
 export type SplitsReceiver = {accountId: bigint; weight: number};

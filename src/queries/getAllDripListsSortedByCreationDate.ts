@@ -1,13 +1,15 @@
 import {Client} from 'pg';
 import appSettings from '../appSettings';
 
-const {chain} = appSettings;
+const {
+  network: {name: dbSchema},
+} = appSettings;
 
 export async function getAllDripListsSortedByCreationDate(db: Client) {
   return db.query<{
     id: bigint;
     createdAt: Date;
   }>({
-    text: `SELECT * FROM "${chain}"."DripLists" ORDER BY "createdAt" DESC`,
+    text: `SELECT * FROM "${dbSchema}"."DripLists" ORDER BY "createdAt" DESC`,
   });
 }

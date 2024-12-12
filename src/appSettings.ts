@@ -14,9 +14,6 @@ const appSettings = {
   chain: validateChain(process.env.CHAIN ?? missingEnvVar('CHAIN')),
   rpcUrl: process.env.RPC_URL ?? missingEnvVar('RPC_URL'),
   rpcUrlAccessToken: process.env.RPC_URL_ACCESS_TOKEN,
-  graphQlUrl: process.env.GRAPHQL_URL ?? missingEnvVar('GRAPHQL_URL'),
-  graphQlAccessToken:
-    process.env.GRAPHQL_ACCESS_TOKEN ?? missingEnvVar('GRAPHQL_ACCESS_TOKEN'),
 } as const;
 
 export default appSettings;

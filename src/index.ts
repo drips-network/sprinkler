@@ -34,7 +34,9 @@ async function main(): Promise<void> {
     console.log('Connected to database.');
 
     const startBalance = await wallet.provider!.getBalance(wallet.address);
-    console.log(`Initial wallet balance: ${formatEther(startBalance)} ETH`);
+    console.log(
+      `Initial wallet balance: ${formatEther(startBalance)} ${appSettings.network.symbol}`,
+    );
 
     const tokens = await getTokens(db);
     console.log(`Found ${tokens.length} tokens to process`);

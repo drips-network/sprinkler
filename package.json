@@ -12,7 +12,7 @@
     "pretest": "npm run compile",
     "posttest": "npm run lint",
     "dev": "ts-node src/index.ts",
-    "start": "node build/index.js"
+    "start": "node build/src/index.js"
   },
   "keywords": [],
   "author": "",

@@ -6,6 +6,8 @@ import getNetwork from './getNetwork';
 dotenvExpand.expand(dotenv.config());
 
 const appSettings = {
+  shouldRun: process.env.SHOULD_RUN === 'true',
+
   connectionString:
     process.env.POSTGRES_CONNECTION_STRING ??
     missingEnvVar('POSTGRES_CONNECTION_STRING'),

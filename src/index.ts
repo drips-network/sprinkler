@@ -18,6 +18,11 @@ const MAX_CYCLES = 1000;
 const SCRIPT_ITERATIONS = 3;
 
 async function main(): Promise<void> {
+  if (!appSettings.shouldRun) {
+    console.log('Script is disabled. Exiting...');
+    return;
+  }
+
   const startTime = Date.now();
   const wallet = await getWalletInstance();
   const db = new Client({connectionString: appSettings.connectionString});

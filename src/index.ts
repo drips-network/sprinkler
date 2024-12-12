@@ -57,7 +57,9 @@ async function main(): Promise<void> {
     logWriteOperations(allWriteOperations);
 
     console.log('\n=== Final Results ===');
-    console.log(`Total cost: ${formatEther(costWei)} ETH`);
+    console.log(
+      `Total cost: ${formatEther(costWei)} ${appSettings.network.currency}`,
+    );
     console.log(
       `Total execution time: ${executionTimeMinutes.toFixed(2)} minutes`,
     );

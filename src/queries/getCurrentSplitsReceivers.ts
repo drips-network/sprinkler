@@ -36,7 +36,7 @@ export default async function getCurrentSplitsReceivers(
     values: [accountId],
   });
 
-  return sortSplits([
+  const splitsReceivers = sortSplitsReceivers([
     ...addressSplits.map(({fundeeAccountId, weight}) => ({
       accountId: BigInt(fundeeAccountId!),
       weight: Number(weight),
@@ -50,9 +50,32 @@ export default async function getCurrentSplitsReceivers(
       weight: Number(weight),
     })),
   ]);
+
+  ensureTotalWeightIsCorrect(splitsReceivers, type, accountId);
+
+  return splitsReceivers;
 }
 
-export function sortSplits(splits: SplitsReceiver[]): SplitsReceiver[] {
+function ensureTotalWeightIsCorrect(
+  splitsReceivers: SplitsReceiver[],
+  type: string,
+  accountId: string,
+) {
+  const totalWeight = splitsReceivers.reduce(
+    (acc, {weight}) => acc + weight,
+    0,
+  );
+
+  if (totalWeight !== 1000000) {
+    throw new Error(
+      `The sum of weights for ${type} ${accountId} is ${totalWeight}, but it should be 1000000.`,
+    );
+  }
+}
+
+export function sortSplitsReceivers(
+  splits: SplitsReceiver[],
+): SplitsReceiver[] {
   // Splits receivers must be sorted by user ID, deduplicated, and without weights <= 0.
   const uniqueReceivers = splits.reduce((unique: SplitsReceiver[], o) => {
     if (

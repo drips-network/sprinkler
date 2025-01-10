@@ -7,14 +7,14 @@ export default async function getTokens(db: Client) {
     network: {name: dbSchema},
   } = appSettings;
 
-  const distictGivenTokens = await db.query({
+  const distinctGivenTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
       FROM "${dbSchema}"."GivenEvents"
     `,
   });
 
-  const distictSplitTokens = await db.query({
+  const distinctSplitTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
       FROM "${dbSchema}"."SplitEvents"
@@ -28,7 +28,7 @@ export default async function getTokens(db: Client) {
     `,
   });
 
-  const distictSqueezedStreamsTokens = await db.query({
+  const distinctSqueezedStreamsTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
       FROM "${dbSchema}"."SqueezedStreamsEvents"
@@ -37,10 +37,10 @@ export default async function getTokens(db: Client) {
 
   return [
     ...new Set([
-      ...distictGivenTokens.rows.map(row => row.erc20),
-      ...distictSplitTokens.rows.map(row => row.erc20),
+      ...distinctGivenTokens.rows.map(row => row.erc20),
+      ...distinctSplitTokens.rows.map(row => row.erc20),
       ...distinctStreamSetTokens.rows.map(row => row.erc20),
-      ...distictSqueezedStreamsTokens.rows.map(row => row.erc20),
+      ...distinctSqueezedStreamsTokens.rows.map(row => row.erc20),
     ]),
   ] as OxString[];
 }

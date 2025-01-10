@@ -10,6 +10,6 @@ export async function getAllProjectsSortedByCreationDate(db: Client) {
     id: bigint;
     createdAt: Date;
   }>({
-    text: `SELECT * FROM "${dbSchema}"."GitProjects" WHERE "claimedAt" IS NOT NULL ORDER BY "createdAt" DESC`,
+    text: `SELECT * FROM "${dbSchema}"."GitProjects" WHERE "verificationStatus" = 'Claimed' ORDER BY "createdAt" DESC`,
   });
 }

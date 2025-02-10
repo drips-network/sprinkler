@@ -31,6 +31,15 @@ export default function getNetwork(chain: ChainId): Network {
           drips: '0xd320F59F109c618b19707ea5C5F068020eA333B3',
         },
       };
+    case 1088:
+      return {
+        chainId: 1088,
+        name: 'metis',
+        symbol: 'METIS',
+        contracts: {
+          drips: '0xd320F59F109c618b19707ea5C5F068020eA333B3',
+        },
+      };
   }
 }
 

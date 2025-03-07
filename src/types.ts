@@ -1,4 +1,4 @@
-export const SUPPORTED_CHAIN_IDS = [1, 11155111, 314, 1088, 10] as const;
+export const SUPPORTED_CHAIN_IDS = [1, 11155111, 314, 1088, 10, 31337] as const;
 export type ChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
 
 export type Network = {

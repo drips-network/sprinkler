@@ -49,6 +49,15 @@ export default function getNetwork(chain: ChainId): Network {
           drips: '0xd320F59F109c618b19707ea5C5F068020eA333B3',
         },
       };
+    case 31337:
+      return {
+        chainId: 31337,
+        name: 'localtestnet',
+        symbol: 'ETH',
+        contracts: {
+          drips: '0x7CBbD3FdF9E5eb359E6D9B12848c5Faa81629944',
+        },
+      };
   }
 }
 

@@ -1,0 +1,14 @@
+FROM node:22
+
+WORKDIR /app
+
+# Copies both package.json and package-lock.json
+COPY package*.json ./
+# Install dependencies
+RUN npm ci --ignore-scripts;
+
+COPY . .
+
+RUN npm run compile
+
+CMD ["npm", "run", "start"]

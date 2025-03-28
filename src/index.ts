@@ -7,6 +7,7 @@ import getTokens from './queries/getTokens';
 import getWalletInstance from './getWalletInstance';
 import {dripsReadContract, dripsWriteContract} from './drips-client';
 import appSettings from './appSettings';
+import retry from 'async-retry';
 import {
   OxString,
   ProcessingResult,
@@ -170,7 +171,7 @@ async function processToken(
     console.log(
       `Awaiting 'receiveStreams' transaction ${txResponse.hash} for ${entityDescription}...`,
     );
-    await txResponse.wait();
+    await retry(() => txResponse.wait);
 
     writeOperations.push({
       type: 'receive',
@@ -198,7 +199,7 @@ async function processToken(
     console.log(
       `Awaiting 'split' transaction ${txResponse.hash} for ${entityDescription}...`,
     );
-    await txResponse.wait();
+    await retry(() => txResponse.wait);
 
     writeOperations.push({
       type: 'split',

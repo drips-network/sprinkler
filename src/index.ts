@@ -171,7 +171,7 @@ async function processToken(
     console.log(
       `Awaiting 'receiveStreams' transaction ${txResponse.hash} for ${entityDescription}...`,
     );
-    await retry(() => txResponse.wait());
+    await retry(() => txResponse.wait);
 
     writeOperations.push({
       type: 'receive',
@@ -199,7 +199,7 @@ async function processToken(
     console.log(
       `Awaiting 'split' transaction ${txResponse.hash} for ${entityDescription}...`,
     );
-    await retry(() => txResponse.wait());
+    await retry(() => txResponse.wait);
 
     writeOperations.push({
       type: 'split',

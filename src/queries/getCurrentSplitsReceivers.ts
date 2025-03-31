@@ -51,8 +51,6 @@ export default async function getCurrentSplitsReceivers(
     })),
   ]);
 
-  ensureTotalWeightIsCorrect(splitsReceivers, type, accountId);
-
   return splitsReceivers;
 }
 
@@ -83,21 +81,4 @@ function sortSplitsReceivers(splits: SplitsReceiver[]): SplitsReceiver[] {
     accountId: BigInt(r.accountId),
     weight: r.weight,
   }));
-}
-
-function ensureTotalWeightIsCorrect(
-  splitsReceivers: SplitsReceiver[],
-  type: string,
-  accountId: string,
-) {
-  const totalWeight = splitsReceivers.reduce(
-    (acc, {weight}) => acc + weight,
-    0,
-  );
-
-  if (totalWeight !== 1000000) {
-    throw new Error(
-      `The sum of weights for ${type} ${accountId} is ${totalWeight}, but it should be 1000000.`,
-    );
-  }
 }

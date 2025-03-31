@@ -14,9 +14,37 @@ import {
   SplitsReceiver,
   WriteOperation,
 } from './types';
+import {notifyDiscord} from './notifyDiscord';
 
 const MAX_CYCLES = 1000;
 const SCRIPT_ITERATIONS = 3;
+
+async function checkTotalWeight(
+  splitsReceivers: SplitsReceiver[],
+  type: string,
+  accountId: string,
+): Promise<boolean> {
+  const totalWeight = splitsReceivers.reduce(
+    (acc, {weight}) => acc + weight,
+    0,
+  );
+
+  if (totalWeight !== 1000000) {
+    const message = `Weights Mismatch: The sum of weights for ${type} ${accountId} is ${totalWeight}, but should be 1000000. Skipping split operation.`;
+    console.warn(message);
+    await notifyDiscord(message);
+    return false;
+  }
+  return true;
+}
+
+function doIfNotDryRun<T>(fn: () => Promise<T>): Promise<T> | null {
+  if (appSettings.dryRun) {
+    console.log('Dry run mode. Skipping execution.');
+    return null;
+  }
+  return fn();
+}
 
 async function main(): Promise<void> {
   if (!appSettings.shouldRun) {
@@ -28,16 +56,22 @@ async function main(): Promise<void> {
   const wallet = await getWalletInstance();
   const db = new Client({connectionString: appSettings.connectionString});
   const allWriteOperations: WriteOperation[] = [];
+  let scriptError: Error | null = null;
+  let startBalance: bigint | undefined;
 
   try {
     console.log('Starting script...');
+    await notifyDiscord(`💧 Now sprinkling: ${appSettings.network.name}`);
+
     await db.connect();
     console.log('Connected to database.');
 
-    const startBalance = await wallet.provider!.getBalance(wallet.address);
-    console.log(
-      `Initial wallet balance: ${formatEther(startBalance)} ${appSettings.network.symbol}`,
-    );
+    if (wallet) {
+      startBalance = await wallet.provider!.getBalance(wallet.address);
+      console.log(
+        `Initial wallet balance: ${formatEther(startBalance)} ${appSettings.network.symbol}`,
+      );
+    }
 
     const tokens = await getTokens(db);
     console.log(`Found ${tokens.length} tokens to process`);
@@ -58,9 +92,13 @@ async function main(): Promise<void> {
       );
     }
 
-    const endBalance = await wallet.provider!.getBalance(wallet.address);
-    const costWei = startBalance - endBalance;
-    const executionTimeMinutes = (Date.now() - startTime) / 1000 / 60;
+    let costWei = 0n;
+    let executionTimeMinutes = 0;
+    if (wallet && startBalance) {
+      const endBalance = await wallet.provider!.getBalance(wallet.address);
+      costWei = startBalance - endBalance;
+      executionTimeMinutes = (Date.now() - startTime) / 1000 / 60;
+    }
 
     logWriteOperations(allWriteOperations);
 
@@ -72,15 +110,30 @@ async function main(): Promise<void> {
       `Total execution time: ${executionTimeMinutes.toFixed(2)} minutes`,
     );
   } catch (error) {
-    console.error(
-      'Error running script:',
-      error instanceof Error ? error.message : error,
-    );
-    if (error instanceof Error && error.stack) {
-      console.error('Stack trace:', error.stack);
+    scriptError = error instanceof Error ? error : new Error(String(error));
+    console.error('Error running script:', scriptError.message);
+    if (scriptError.stack) {
+      console.error('Stack trace:', scriptError.stack);
     }
   } finally {
+    const endBalance = wallet
+      ? await wallet.provider!.getBalance(wallet.address)
+      : 0n;
+    const costWei = startBalance && endBalance ? startBalance - endBalance : 0n;
+    const executionTimeMinutes = (Date.now() - startTime) / 1000 / 60;
+
+    const summary = generateSummary(
+      allWriteOperations,
+      costWei,
+      endBalance,
+      executionTimeMinutes,
+      scriptError,
+    );
+    await notifyDiscord(summary);
+
+    console.log('Disconnecting from database.');
     await db.end();
+    console.log('Script finished.');
   }
 }
 
@@ -125,11 +178,19 @@ async function processProjects(
   const {rows: projects} = await getAllProjectsSortedByCreationDate(db);
 
   for (const project of projects) {
-    const splitsReceivers = await getCurrentSplitsReceivers(
-      db,
-      project.id.toString(),
+    const id = project.id.toString();
+
+    const splitsReceivers = await getCurrentSplitsReceivers(db, id, 'project');
+
+    const weightsAreCorrect = await checkTotalWeight(
+      splitsReceivers,
       'project',
+      id,
     );
+
+    if (!weightsAreCorrect) {
+      continue;
+    }
 
     for (const token of tokens) {
       const result = await processToken(
@@ -163,26 +224,40 @@ async function processToken(
   });
 
   if (receivable > 0) {
-    const txResponse = await dripsWriteContract({
-      functionName: 'receiveStreams',
-      args: [accountId, token as OxString, MAX_CYCLES],
-    });
+    try {
+      const txResponse = await doIfNotDryRun(() =>
+        dripsWriteContract({
+          functionName: 'receiveStreams',
+          args: [accountId, token as OxString, MAX_CYCLES],
+        }),
+      );
 
-    console.log(
-      `Awaiting 'receiveStreams' transaction ${txResponse.hash} for ${entityDescription}...`,
-    );
-    await retry(() => txResponse.wait);
+      if (txResponse) {
+        console.log(
+          `Awaiting 'receiveStreams' transaction ${txResponse.hash} for ${entityDescription}...`,
+        );
+        await retry(async () => txResponse.wait(1));
 
-    writeOperations.push({
-      type: 'receive',
-      accountId,
-      token,
-      amount: receivable,
-      txHash: txResponse.hash,
-    });
-    console.log(
-      `Received ${formatEther(receivable)} tokens for ${entityDescription}. Transaction: ${txResponse.hash}`,
-    );
+        writeOperations.push({
+          type: 'receive',
+          accountId,
+          token,
+          amount: receivable,
+          txHash: txResponse.hash,
+        });
+        console.log(
+          `Received ${formatEther(receivable)} tokens for ${entityDescription}. Transaction: ${txResponse.hash}`,
+        );
+      } else {
+        console.log(
+          `Dry run mode. Skipping 'receiveStreams' transaction for ${entityDescription}.`,
+        );
+      }
+    } catch (error) {
+      const errorMessage = `Receive Streams Error: Failed to receive streams for ${type} ${accountId}. Error: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(errorMessage);
+      await notifyDiscord(`❌ ${errorMessage}`);
+    }
   }
 
   const splittable = await dripsReadContract({
@@ -191,29 +266,66 @@ async function processToken(
   });
 
   if (splittable > 0) {
-    const txResponse = await dripsWriteContract({
-      functionName: 'split',
-      args: [accountId, token as OxString, splitsReceivers],
-    });
+    try {
+      const txResponse = await doIfNotDryRun(() =>
+        dripsWriteContract({
+          functionName: 'split',
+          args: [accountId, token as OxString, splitsReceivers],
+        }),
+      );
 
-    console.log(
-      `Awaiting 'split' transaction ${txResponse.hash} for ${entityDescription}...`,
-    );
-    await retry(() => txResponse.wait);
+      if (txResponse) {
+        console.log(
+          `Awaiting 'split' transaction ${txResponse.hash} for ${entityDescription}...`,
+        );
+        await retry(async () => txResponse.wait(1));
 
-    writeOperations.push({
-      type: 'split',
-      accountId,
-      token,
-      amount: splittable,
-      txHash: txResponse.hash,
-    });
-    console.log(
-      `Split ${formatEther(splittable)} tokens for ${entityDescription}. Transaction: ${txResponse.hash}`,
-    );
+        writeOperations.push({
+          type: 'split',
+          accountId,
+          token,
+          amount: splittable,
+          txHash: txResponse.hash,
+        });
+        console.log(
+          `Split ${formatEther(splittable)} tokens for ${entityDescription}. Transaction: ${txResponse.hash}`,
+        );
+      } else {
+        console.log(
+          `Dry run mode. Skipping 'split' transaction for ${entityDescription}.`,
+        );
+      }
+    } catch (error) {
+      const errorMessage = `Split Error: Failed to split for ${type} ${accountId}. Error: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(errorMessage);
+      await notifyDiscord(`❌ ${errorMessage}`);
+    }
   }
 
   return {writeOperations};
+}
+
+function generateSummary(
+  operations: WriteOperation[],
+  costWei: bigint,
+  endBalance: bigint,
+  durationMinutes: number,
+  error: Error | null,
+): string {
+  const receiveOps = operations.filter(op => op.type === 'receive');
+  const splitOps = operations.filter(op => op.type === 'split');
+
+  let summary = `✅ Sprinkler script finished for network: ${appSettings.network.name}.\n`;
+  if (error) {
+    summary = `❌ Sprinkler script finished with errors for network: ${appSettings.network.name}.\nError: ${error.message}\n`;
+  }
+
+  summary += `Execution Time: ${durationMinutes.toFixed(2)} minutes\n`;
+  summary += `Total Cost: ${formatEther(costWei)} ${appSettings.network.symbol}\n`;
+  summary += `Final Wallet Balance: ${formatEther(endBalance)} ${appSettings.network.symbol}\n`;
+  summary += `Total Operations: ${operations.length} (Receives: ${receiveOps.length}, Splits: ${splitOps.length})\n`;
+
+  return summary;
 }
 
 function logWriteOperations(operations: WriteOperation[]): void {
@@ -244,7 +356,12 @@ function logWriteOperations(operations: WriteOperation[]): void {
   }
 }
 
-void main().catch(error => {
+void main().catch(async error => {
   console.error('Unhandled error in main:', error);
-  process.exit(1); // eslint-disable-line n/no-process-exit
+
+  await notifyDiscord(
+    `🚨 Unhandled critical error in sprinkler script: ${error instanceof Error ? error.message : String(error)}`,
+  );
+
+  throw error;
 });

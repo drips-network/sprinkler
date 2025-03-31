@@ -125,6 +125,7 @@ async function main(): Promise<void> {
     const summary = generateSummary(
       allWriteOperations,
       costWei,
+      endBalance,
       executionTimeMinutes,
       scriptError,
     );
@@ -307,6 +308,7 @@ async function processToken(
 function generateSummary(
   operations: WriteOperation[],
   costWei: bigint,
+  endBalance: bigint,
   durationMinutes: number,
   error: Error | null,
 ): string {
@@ -320,6 +322,7 @@ function generateSummary(
 
   summary += `Execution Time: ${durationMinutes.toFixed(2)} minutes\n`;
   summary += `Total Cost: ${formatEther(costWei)} ${appSettings.network.symbol}\n`;
+  summary += `Final Wallet Balance: ${formatEther(endBalance)} ${appSettings.network.symbol}\n`;
   summary += `Total Operations: ${operations.length} (Receives: ${receiveOps.length}, Splits: ${splitOps.length})\n`;
 
   return summary;

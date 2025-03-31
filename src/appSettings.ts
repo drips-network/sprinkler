@@ -7,13 +7,18 @@ dotenvExpand.expand(dotenv.config());
 
 const appSettings = {
   shouldRun: process.env.SHOULD_RUN === 'true',
+  dryRun: process.env.DRY_RUN === 'true',
 
   connectionString:
     process.env.POSTGRES_CONNECTION_STRING ??
     missingEnvVar('POSTGRES_CONNECTION_STRING'),
-  walletPrivateKey: validatePrivateKey(
-    process.env.WALLET_PRIVATE_KEY ?? missingEnvVar('WALLET_PRIVATE_KEY'),
-  ),
+
+  walletPrivateKey:
+    process.env.DRY_RUN === 'true'
+      ? undefined
+      : validatePrivateKey(
+          process.env.WALLET_PRIVATE_KEY ?? missingEnvVar('WALLET_PRIVATE_KEY'),
+        ),
 
   network: getNetwork(
     Number(process.env.CHAIN_ID ?? missingEnvVar('CHAIN_ID')) as ChainId,
@@ -21,7 +26,15 @@ const appSettings = {
 
   rpcUrl: process.env.RPC_URL ?? missingEnvVar('RPC_URL'),
   rpcUrlAccessToken: process.env.RPC_URL_ACCESS_TOKEN,
+
+  discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,
 } as const;
+
+if (!appSettings.discordWebhookUrl) {
+  console.warn(
+    'No Discord webhook URL provided. Notifications will not be sent.',
+  );
+}
 
 export default appSettings;
 

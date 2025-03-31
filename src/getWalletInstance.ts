@@ -1,6 +1,13 @@
 import {FetchRequest, JsonRpcProvider, Wallet} from 'ethers';
 import appSettings from './appSettings';
 
+const {rpcUrl, rpcUrlAccessToken} = appSettings;
+const urlOrFetchRequest = rpcUrlAccessToken
+  ? createAuthFetchRequest(rpcUrl, rpcUrlAccessToken)
+  : rpcUrl;
+
+const provider = new JsonRpcProvider(urlOrFetchRequest);
+
 let walletInstance: Wallet | null = null;
 
 function createAuthFetchRequest(rpcUrl: string, token: string): FetchRequest {
@@ -11,19 +18,20 @@ function createAuthFetchRequest(rpcUrl: string, token: string): FetchRequest {
   return fetchRequest;
 }
 
-export default async function getWalletInstance(): Promise<Wallet> {
+export async function getContractRunner() {
+  const wallet = await getWalletInstance();
+
+  return wallet ?? provider;
+}
+
+export default async function getWalletInstance(): Promise<Wallet | null> {
+  if (!appSettings.walletPrivateKey) return null;
+
   if (walletInstance) {
     return walletInstance;
   }
 
   try {
-    const {rpcUrl, rpcUrlAccessToken} = appSettings;
-    const urlOrFetchRequest = rpcUrlAccessToken
-      ? createAuthFetchRequest(rpcUrl, rpcUrlAccessToken)
-      : rpcUrl;
-
-    const provider = new JsonRpcProvider(urlOrFetchRequest);
-
     const network = await provider.getNetwork();
     // eslint-disable-next-line n/no-unsupported-features/es-builtins
     if (network.chainId !== BigInt(appSettings.network.chainId)) {

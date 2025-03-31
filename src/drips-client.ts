@@ -7,7 +7,7 @@ import type {
 import {dripsAbi, type DripsAbi} from './drips-abi';
 import {Contract, TransactionResponse} from 'ethers';
 import appSettings from './appSettings';
-import getWalletInstance from './getWalletInstance';
+import {getContractRunner} from './getWalletInstance';
 
 const {
   network: {
@@ -23,14 +23,16 @@ async function getDripsContract(): Promise<Contract> {
     return contractInstance;
   }
 
-  const wallet = await getWalletInstance();
-
   if (!contractAddress) {
     throw new Error(`No contract address configured for chain: ${networkName}`);
   }
 
   try {
-    contractInstance = new Contract(contractAddress, dripsAbi, wallet);
+    contractInstance = new Contract(
+      contractAddress,
+      dripsAbi,
+      await getContractRunner(),
+    );
     return contractInstance;
   } catch (error) {
     throw new Error(

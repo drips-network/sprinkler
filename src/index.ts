@@ -30,7 +30,7 @@ async function checkTotalWeight(
   );
 
   if (totalWeight !== 1000000) {
-    const message = `Weights Mismatch: The sum of weights for ${type} ${accountId} is ${totalWeight}, but should be 1000000. Skipping split operation for this token.`;
+    const message = `Weights Mismatch: The sum of weights for ${type} ${accountId} is ${totalWeight}, but should be 1000000. Skipping split operation.`;
     console.warn(message);
     await notifyDiscord(message);
     return false;

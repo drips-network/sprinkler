@@ -10,28 +10,28 @@ export default async function getTokens(db: Client) {
   const distinctGivenTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
-      FROM "${dbSchema}"."GivenEvents"
+      FROM ${dbSchema}.given_events
     `,
   });
 
   const distinctSplitTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
-      FROM "${dbSchema}"."SplitEvents"
+      FROM ${dbSchema}.split_events
     `,
   });
 
   const distinctStreamSetTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
-      FROM "${dbSchema}"."StreamsSetEvents"
+      FROM ${dbSchema}.streams_set_events
     `,
   });
 
   const distinctSqueezedStreamsTokens = await db.query({
     text: `
       SELECT DISTINCT ON ("erc20") "erc20"
-      FROM "${dbSchema}"."SqueezedStreamsEvents"
+      FROM ${dbSchema}.squeezed_streams_events
     `,
   });
 

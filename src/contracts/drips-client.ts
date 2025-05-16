@@ -4,10 +4,11 @@ import type {
   ExtractAbiFunction,
   ExtractAbiFunctionNames,
 } from 'abitype';
-import {dripsAbi, type DripsAbi} from './drips-abi';
 import {Contract, TransactionResponse} from 'ethers';
-import appSettings from './appSettings';
-import {getContractRunner} from './getWalletInstance';
+import appSettings from '../appSettings';
+import {getContractRunner} from '../getWalletInstance';
+import {dripsAbi, DripsAbi} from './drips-abi';
+import {unwrapEthersResult, UnwrappedEthersResult} from './unwrapEthersResult';
 
 const {
   network: {
@@ -89,18 +90,3 @@ export async function dripsWriteContract<
     );
   }
 }
-
-export function unwrapEthersResult<T>(
-  result: T | T[],
-): UnwrappedEthersResult<T> | UnwrappedEthersResult<T[]> {
-  if (Array.isArray(result) && result.length === 1) {
-    return result[0] as UnwrappedEthersResult<T>;
-  }
-  return result as UnwrappedEthersResult<T[]>;
-}
-
-export type UnwrappedEthersResult<T> = T extends [infer U]
-  ? U
-  : T extends readonly [infer U]
-    ? U
-    : T;

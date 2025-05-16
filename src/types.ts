@@ -7,6 +7,7 @@ export type Network = {
   symbol: string;
   contracts: {
     drips: string;
+    repoSubAccountDriver: string;
   };
 };
 

@@ -29,5 +29,7 @@ export async function getAllProjectsAndSubProjectSortedByCreationDate(
     })),
   );
 
-  return [...projects, ...subProjects];
+  return [...projects, ...subProjects].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  );
 }

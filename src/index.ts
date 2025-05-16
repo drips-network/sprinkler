@@ -1,11 +1,10 @@
 import {Client} from 'pg';
 import {formatEther} from 'ethers';
 import {getAllDripListsSortedByCreationDate} from './queries/getAllDripListsSortedByCreationDate';
-import {getAllProjectsSortedByCreationDate} from './queries/getAllProjectsSortedByCreationDate';
 import getCurrentSplitsReceivers from './queries/getCurrentSplitsReceivers';
 import getTokens from './queries/getTokens';
 import getWalletInstance from './getWalletInstance';
-import {dripsReadContract, dripsWriteContract} from './drips-client';
+import {dripsReadContract, dripsWriteContract} from './contracts/drips-client';
 import appSettings from './appSettings';
 import retry from 'async-retry';
 import {
@@ -15,6 +14,7 @@ import {
   WriteOperation,
 } from './types';
 import {notifyDiscord} from './notifyDiscord';
+import {getAllProjectsAndSubProjectSortedByCreationDate} from './queries/getAllProjectsSortedByCreationDate';
 
 const MAX_CYCLES = 1000;
 const SCRIPT_ITERATIONS = 3;
@@ -175,7 +175,7 @@ async function processProjects(
   console.log('\nProcessing projects...');
   const writeOperations: WriteOperation[] = [];
 
-  const {rows: projects} = await getAllProjectsSortedByCreationDate(db);
+  const projects = await getAllProjectsAndSubProjectSortedByCreationDate(db);
 
   for (const project of projects) {
     const id = project.id.toString();

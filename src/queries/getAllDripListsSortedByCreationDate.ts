@@ -10,6 +10,6 @@ export async function getAllDripListsSortedByCreationDate(db: Client) {
     id: bigint;
     createdAt: Date;
   }>({
-    text: `SELECT * FROM "${dbSchema}"."DripLists" ORDER BY "createdAt" DESC`,
+    text: `SELECT * FROM ${dbSchema}."drip_lists" ORDER BY "created_at" DESC`,
   });
 }

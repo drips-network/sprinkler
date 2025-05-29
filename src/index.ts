@@ -147,9 +147,17 @@ async function processDripLists(
   const {rows: dripLists} = await getAllDripListsSortedByCreationDate(db);
 
   for (const dripList of dripLists) {
+    const dripListId = dripList.id.toString();
+    if (appSettings.accountIdsToSkip.includes(dripListId)) {
+      console.log(
+        `Skipping Drip List ${dripListId} as per ACCOUNT_IDS_TO_SKIP.`,
+      );
+      continue; // Skip to the next drip list
+    }
+
     const splitsReceivers = await getCurrentSplitsReceivers(
       db,
-      dripList.id.toString(),
+      dripListId,
       'dripList',
     );
 
@@ -178,20 +186,36 @@ async function processProjects(
   const {rows: projects} = await getAllProjectsSortedByCreationDate(db);
 
   for (const project of projects) {
-    const id = project.id.toString();
+    const projectId = project.id.toString();
+    if (appSettings.accountIdsToSkip.includes(projectId)) {
+      console.log(`Skipping Project ${projectId} as per ACCOUNT_IDS_TO_SKIP.`);
+      continue; // Skip to the next project
+    }
 
-    const splitsReceivers = await getCurrentSplitsReceivers(db, id, 'project');
+    const splitsReceivers = await getCurrentSplitsReceivers(
+      db,
+      projectId,
+      'project',
+    );
 
     const weightsAreCorrect = await checkTotalWeight(
       splitsReceivers,
       'project',
-      id,
+      projectId,
     );
 
-    if (!weightsAreCorrect) {
-      continue;
+    // Skip processing tokens ONLY if weights are incorrect AND the project ID is NOT in the exception list
+    if (
+      !weightsAreCorrect &&
+      !appSettings.accountIdsToSplitDespiteWrongWeights.includes(projectId)
+    ) {
+      console.warn(
+        `Project ${projectId} will not be split because weights are incorrect and it's not in the exception list.`,
+      );
+      continue; // Skip the token processing loop for this project
     }
 
+    // If weightsAreCorrect is true OR the ID is in the exception list, proceed to the token loop...
     for (const token of tokens) {
       const result = await processToken(
         project.id,
@@ -260,7 +284,7 @@ async function processToken(
     }
   }
 
-  const splittable = await dripsReadContract({
+const splittable = await dripsReadContract({
     functionName: 'splittable',
     args: [accountId, token as OxString],
   });

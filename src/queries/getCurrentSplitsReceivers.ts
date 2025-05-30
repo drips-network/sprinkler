@@ -19,33 +19,13 @@ export default async function getCurrentSplitsReceivers(
   accountId: string,
   type: 'dripList' | 'project',
 ): Promise<SplitsReceiver[]> {
-  const idColumn = type === 'dripList' ? 'funderDripListId' : 'funderProjectId';
-
-  const {rows: addressSplits} = await db.query<SplitRow>({
-    text: `SELECT * FROM "${dbSchema}"."AddressDriverSplitReceivers" WHERE "${idColumn}" = $1`,
-    values: [accountId],
-  });
-
-  const {rows: dripListSplits} = await db.query<SplitRow>({
-    text: `SELECT * FROM "${dbSchema}"."DripListSplitReceivers" WHERE "${idColumn}" = $1`,
-    values: [accountId],
-  });
-
-  const {rows: projectSplits} = await db.query<SplitRow>({
-    text: `SELECT * FROM "${dbSchema}"."RepoDriverSplitReceivers" WHERE "${idColumn}" = $1`,
+  const {rows: splits} = await db.query<SplitRow>({
+    text: `SELECT * FROM "${dbSchema}"."splits_receivers" WHERE sender_account_id = $1`,
     values: [accountId],
   });
 
   const splitsReceivers = sortSplitsReceivers([
-    ...addressSplits.map(({fundeeAccountId, weight}) => ({
-      accountId: BigInt(fundeeAccountId!),
-      weight: Number(weight),
-    })),
-    ...dripListSplits.map(({fundeeDripListId, weight}) => ({
-      accountId: BigInt(fundeeDripListId!),
-      weight: Number(weight),
-    })),
-    ...projectSplits.map(({fundeeProjectId, weight}) => ({
+    ...splits.map(({fundeeProjectId, weight}) => ({
       accountId: BigInt(fundeeProjectId!),
       weight: Number(weight),
     })),

@@ -5,6 +5,16 @@ import getNetwork from './getNetwork';
 
 dotenvExpand.expand(dotenv.config());
 
+function parseCommaSeparatedList(envVar: string | undefined): string[] {
+  if (!envVar) {
+    return [];
+  }
+  return envVar
+    .split(',')
+    .map(id => id.trim())
+    .filter(id => id.length > 0);
+}
+
 const appSettings = {
   shouldRun: process.env.SHOULD_RUN === 'true',
   dryRun: process.env.DRY_RUN === 'true',
@@ -28,6 +38,11 @@ const appSettings = {
   rpcUrlAccessToken: process.env.RPC_URL_ACCESS_TOKEN,
 
   discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,
+
+  accountIdsToSkip: parseCommaSeparatedList(process.env.ACCOUNT_IDS_TO_SKIP),
+  accountIdsToSplitDespiteWrongWeights: parseCommaSeparatedList(
+    process.env.ACCOUNT_IDS_TO_SPLIT_DESPITE_WRONG_WEIGHTS,
+  ),
 } as const;
 
 if (!appSettings.discordWebhookUrl) {

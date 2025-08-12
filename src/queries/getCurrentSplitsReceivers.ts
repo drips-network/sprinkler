@@ -8,28 +8,25 @@ const {
 } = appSettings;
 
 type SplitRow = {
-  fundeeAccountId?: string;
-  fundeeDripListId?: string;
-  fundeeProjectId?: string;
-  weight: bigint;
+  receiver_account_id: string;
+  weight: number;
 };
 
 export default async function getCurrentSplitsReceivers(
   db: Client,
   accountId: string,
-  type: 'dripList' | 'project',
 ): Promise<SplitsReceiver[]> {
   const {rows: splits} = await db.query<SplitRow>({
-    text: `SELECT * FROM "${dbSchema}"."splits_receivers" WHERE sender_account_id = $1`,
+    text: `SELECT receiver_account_id, weight FROM "${dbSchema}"."splits_receivers" WHERE sender_account_id = $1`,
     values: [accountId],
   });
 
-  const splitsReceivers = sortSplitsReceivers([
-    ...splits.map(({fundeeProjectId, weight}) => ({
-      accountId: BigInt(fundeeProjectId!),
-      weight: Number(weight),
+  const splitsReceivers = sortSplitsReceivers(
+    splits.map(row => ({
+      accountId: BigInt(row.receiver_account_id),
+      weight: row.weight,
     })),
-  ]);
+  );
 
   return splitsReceivers;
 }

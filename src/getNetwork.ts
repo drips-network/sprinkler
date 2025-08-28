@@ -11,7 +11,7 @@ export default function getNetwork(chain: ChainId): Network {
         symbol: 'ETH',
         contracts: {
           drips: '0xd0Dd053392db676D57317CD4fe96Fc2cCf42D0b4',
-          repoSubAccountDriver: '0x0000000000000000000000000000000000000000',
+          repoSubAccountDriver: '0xc219395880fa72e3ad9180b8878e0d39d144130b',
         },
       };
     case 11155111:

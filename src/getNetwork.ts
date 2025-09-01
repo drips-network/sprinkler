@@ -21,7 +21,7 @@ export default function getNetwork(chain: ChainId): Network {
         symbol: 'SepoliaETH',
         contracts: {
           drips: '0x74A32a38D945b9527524900429b083547DeB9bF4',
-          repoSubAccountDriver: '0x0000000000000000000000000000000000000000',
+          repoSubAccountDriver: '0x317400fd9dfdad78d53a34455d89beb8f03f90ee',
         },
       };
     case 314:
@@ -31,7 +31,7 @@ export default function getNetwork(chain: ChainId): Network {
         symbol: 'FIL',
         contracts: {
           drips: '0xd320F59F109c618b19707ea5C5F068020eA333B3',
-          repoSubAccountDriver: '0x0000000000000000000000000000000000000000',
+          repoSubAccountDriver: '0x925a69f6d07ee4c753df139bcc2a946e1d1ee92a',
         },
       };
     case 1088:
@@ -41,7 +41,7 @@ export default function getNetwork(chain: ChainId): Network {
         symbol: 'METIS',
         contracts: {
           drips: '0xd320F59F109c618b19707ea5C5F068020eA333B3',
-          repoSubAccountDriver: '0x0000000000000000000000000000000000000000',
+          repoSubAccountDriver: '0x925a69f6d07ee4c753df139bcc2a946e1d1ee92a',
         },
       };
     case 10:
@@ -51,7 +51,7 @@ export default function getNetwork(chain: ChainId): Network {
         symbol: 'ETH',
         contracts: {
           drips: '0xd320F59F109c618b19707ea5C5F068020eA333B3',
-          repoSubAccountDriver: '0x0000000000000000000000000000000000000000',
+          repoSubAccountDriver: '0x925a69f6d07ee4c753df139bcc2a946e1d1ee92a',
         },
       };
     case 31337:

@@ -15,7 +15,12 @@ export async function getAllProjectsAndSubProjectSortedByCreationDate(
       id: bigint;
       createdAt: Date;
     }>({
-      text: `SELECT * FROM ${dbSchema}.projects WHERE "verification_status" = 'claimed' ORDER BY "created_at" DESC`,
+      text: `
+        SELECT
+          p."account_id" as "id",
+          p."created_at" as "createdAt"
+        FROM ${dbSchema}.projects p
+        WHERE "verification_status" = 'claimed' ORDER BY "created_at" DESC`,
     })
   ).rows;
 

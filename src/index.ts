@@ -15,6 +15,7 @@ import {
 } from './types';
 import {notifyDiscord} from './notifyDiscord';
 import {getAllProjectsAndSubProjectSortedByCreationDate} from './queries/getAllProjectsSortedByCreationDate';
+import {getAllOrcidAccountsWithSplits} from './queries/getAllOrcidAccountsWithSplits';
 
 const MAX_CYCLES = 1000;
 const SCRIPT_ITERATIONS = 3;
@@ -81,10 +82,12 @@ async function main(): Promise<void> {
 
       const dripListsResult = await processDripLists(db, tokens);
       const projectsResult = await processProjects(db, tokens);
+      const orcidResult = await processOrcidAccounts(db, tokens);
 
       allWriteOperations.push(
         ...dripListsResult.writeOperations,
         ...projectsResult.writeOperations,
+        ...orcidResult.writeOperations,
       );
 
       console.log(
@@ -155,11 +158,7 @@ async function processDripLists(
       continue; // Skip to the next drip list
     }
 
-    const splitsReceivers = await getCurrentSplitsReceivers(
-      db,
-      dripListId,
-      'dripList',
-    );
+    const splitsReceivers = await getCurrentSplitsReceivers(db, dripListId);
 
     for (const token of tokens) {
       const result = await processToken(
@@ -192,11 +191,7 @@ async function processProjects(
       continue; // Skip to the next project
     }
 
-    const splitsReceivers = await getCurrentSplitsReceivers(
-      db,
-      projectId,
-      'project',
-    );
+    const splitsReceivers = await getCurrentSplitsReceivers(db, projectId);
 
     const weightsAreCorrect = await checkTotalWeight(
       splitsReceivers,
@@ -231,11 +226,63 @@ async function processProjects(
   return {writeOperations};
 }
 
+async function processOrcidAccounts(
+  db: Client,
+  tokens: OxString[],
+): Promise<ProcessingResult> {
+  console.log('\nProcessing ORCID accounts...');
+  const writeOperations: WriteOperation[] = [];
+
+  const orcidRows = await getAllOrcidAccountsWithSplits(db);
+
+  console.log(`Found ${orcidRows.length} ORCID accounts to process`);
+
+  for (const row of orcidRows) {
+    const accountIdStr = row.accountId.toString();
+
+    if (appSettings.accountIdsToSkip.includes(accountIdStr)) {
+      console.log(
+        `Skipping ORCID Account ${accountIdStr} as per ACCOUNT_IDS_TO_SKIP.`,
+      );
+      continue;
+    }
+
+    // Validate that ORCID account splits 100% to owner
+    if (row.receiverAccountId !== row.ownerAccountId || row.weight !== 1_000_000) {
+      const message = `ORCID Validation Error: Account ${accountIdStr} doesn't split 100% to owner. Expected receiver: ${row.ownerAccountId}, got: ${row.receiverAccountId}. Expected weight: 1000000, got: ${row.weight}`;
+      console.warn(message);
+      await notifyDiscord(`⚠️ ${message}`);
+      continue;
+    }
+
+    // Create splits receiver configuration (100% to owner)
+    const splitsReceivers: SplitsReceiver[] = [
+      {
+        accountId: row.receiverAccountId,
+        weight: row.weight,
+      },
+    ];
+
+    for (const token of tokens) {
+      const result = await processToken(
+        row.accountId,
+        token,
+        splitsReceivers,
+        'orcidAccount',
+      );
+      writeOperations.push(...result.writeOperations);
+    }
+  }
+
+  console.log('Completed processing ORCID accounts');
+  return {writeOperations};
+}
+
 async function processToken(
   accountId: bigint,
   token: string,
   splitsReceivers: SplitsReceiver[],
-  type: 'dripList' | 'project',
+  type: 'dripList' | 'project' | 'orcidAccount',
 ): Promise<ProcessingResult> {
   const writeOperations: WriteOperation[] = [];
   const entityDescription = `${type} ${accountId}`;
@@ -284,7 +331,7 @@ async function processToken(
     }
   }
 
-const splittable = await dripsReadContract({
+  const splittable = await dripsReadContract({
     functionName: 'splittable',
     args: [accountId, token as OxString],
   });

@@ -16,6 +16,7 @@ import {
 import {notifyDiscord} from './notifyDiscord';
 import {getAllProjectsAndSubProjectSortedByCreationDate} from './queries/getAllProjectsSortedByCreationDate';
 import {getAllOrcidAccountsWithSplits} from './queries/getAllOrcidAccountsWithSplits';
+import {isRepoSubAccountDriverId} from './isRepoSubAccountDriverId';
 
 const MAX_CYCLES = 1000;
 const SCRIPT_ITERATIONS = 3;
@@ -30,13 +31,23 @@ async function checkTotalWeight(
     0,
   );
 
-  if (totalWeight !== 1000000) {
-    const message = `Weights Mismatch: The sum of weights for ${type} ${accountId} is ${totalWeight}, but should be 1000000. Skipping split operation.`;
-    console.warn(message);
-    await notifyDiscord(message);
-    return false;
+  if (totalWeight === 0) {
+    // Silent skip for repo sub-accounts, this is normal.
+    if (isRepoSubAccountDriverId(accountId)) {
+      console.log(`Repo sub-account ${accountId} has no splits. Skipping.`);
+      return false;
+    }
   }
-  return true;
+
+  if (totalWeight === 1000000) {
+    // Valid configuration
+    return true;
+  }
+
+  const message = `Weights Mismatch: The sum of weights for ${type} ${accountId} is ${totalWeight}, but should be 1000000. Skipping split operation.`;
+  console.warn(message);
+  await notifyDiscord(message);
+  return false;
 }
 
 function doIfNotDryRun<T>(fn: () => Promise<T>): Promise<T> | null {
@@ -248,7 +259,10 @@ async function processOrcidAccounts(
     }
 
     // Validate that ORCID account splits 100% to owner
-    if (row.receiverAccountId !== row.ownerAccountId || row.weight !== 1_000_000) {
+    if (
+      row.receiverAccountId !== row.ownerAccountId ||
+      row.weight !== 1_000_000
+    ) {
       const message = `ORCID Validation Error: Account ${accountIdStr} doesn't split 100% to owner. Expected receiver: ${row.ownerAccountId}, got: ${row.receiverAccountId}. Expected weight: 1000000, got: ${row.weight}`;
       console.warn(message);
       await notifyDiscord(`⚠️ ${message}`);
